@@ -57,6 +57,38 @@ app.get('/getLDCs',function(req,res){
   });
 });
 
+//This request is to get all the countries that LDCs are located in
+app.get('/getLDCCountries', function(req, res) {
+	query.getLDCCountries(function(countryList) {
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.send(countryList);
+	});
+});
+
+//This request is to get all the cities in a given country
+app.get('/getCitiesInCountry', function(req, res) {
+	query.getCitiesInCountry(req.query.country, function(cityList) {
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.send(cityList);
+	});
+});
+
+//This request is to get all the LDCs in a given city
+app.get('/getLDCsInCity', function(req, res) {
+	query.getLDCsInCity(req.query.city, function(ldcList) {
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.send(ldcList);
+	});
+});
+
+//This request is to get all the rate types at a given LDC in a given city
+app.get('/getRateTypesFromLDC', function(req, res) {
+	query.getRateTypesFromLDC(req.query.city, req.query.ldc, function(rateList) {
+		res.setHeader('Access-Control-Allow-Origin', '*');
+		res.send(rateList);
+	});
+});
+
 //rate type get calls
 app.get('/getRates',function(req,res){
   query.getRates(function(message){
