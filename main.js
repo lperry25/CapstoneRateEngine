@@ -42,7 +42,6 @@ app.put('/calculateCost',function(req,res){
   });
 });
 
-
 //database calls
 
 app.get('/getRateTypes',function(req, res){
