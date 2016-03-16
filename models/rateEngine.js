@@ -14,13 +14,14 @@ var consumptionCost  = new Array();
 var consumption      = new Array();
 var demand           = new Array();
 var demandCost       = new Array();
+var fixedCost        = new Array();
 var totalCost        = new Array();
+var lcdID            = 0;
 
 var RateEngine = function() {
   /* ===== RateEngine Fields ===== */
   this.pricingModel    = new PricingModel();
   this.demandCost      = [];
-  this.fixedCost       = [];
   this.totalCost       = [];
 };
 
@@ -32,40 +33,46 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	consumptionCost = new Array();
 	demand = new Array();
 	demandCost = new Array();
+	fixedCost = new Array();
 	totalCost = new Array();
+
+	lcdID = getlcdID()
 
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
-	console.log("Made it to the rate Engine with Consumption "+ body.consumption);
 	var str = body.consumption;
-	console.log("body as a string : "+str);
 	var json = JSON.stringify(eval("(" + str + ")"));
-	console.log("body as a JSON : "+json);
 	var conObj = JSON.parse(json);
-	console.log("display object : "+conObj[0].amount);
 
+/*	//uncomment for testing
+	console.log("Made it to the rate Engine with Consumption "+ body.consumption);
+	console.log("body as a string : "+str);
+	console.log("body as a JSON : "+json);
+	console.log("display object : "+conObj[0].amount);
+*/
 	
 	conObj.forEach(function(item){
 		var inputConsumption = new Consumption();
 		inputConsumption.setPoint(item.time, item.amount);
-		console.log("new consumption : "+ inputConsumption.amount);
 		consumption.push(inputConsumption);
 	});
 
-	//parse demand into demand objects
-	console.log("Made it to the rate Engine with Demand "+ body.demand);
-	var str = body.demand;
-	console.log("body as a string : "+str);
-	var json = JSON.stringify(eval("(" + str + ")"));
-	console.log("body as a JSON : "+json);
-	var demandObj = JSON.parse(json);
-	console.log("display object : "+demandObj[0].amount);
 
+	//parse demand into demand objects
+	var str = body.demand;
+	var json = JSON.stringify(eval("(" + str + ")"));
+	var demandObj = JSON.parse(json);
+
+/*	//uncomment for testing	
+	console.log("Made it to the rate Engine with Demand "+ body.demand);
+	console.log("body as a string : "+str);
+	console.log("body as a JSON : "+json);
+	console.log("display object : "+demandObj[0].amount);
+*/
 	
 	demandObj.forEach(function(item){
 		var inputDemand = new Demand();
 		inputDemand.setPoint(item.time, item.amount);
-		console.log("new demand : "+ inputDemand.amount);
 		demand.push(inputDemand);
 	});
 
@@ -84,34 +91,37 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 */
 	//first check to see if this is a special rate type
 	if(this.checkRateType())
-		{
-			//will need to edit this to use call backs
-			this.calculateConsumptionCost(function(callbackFromCalcs){
-				//this.calculateTotalCost();
+	{
+		//will need to edit this to use call backs
+		this.calculateConsumptionCost(function(callbackFromCalcs){
+		/*		//this.calculateTotalCost();
 				console.log("Completed Conusumption Calculations");
 				console.log("Returning consumption costs " + consumptionCost);
 				var returnCost = JSON.stringify(consumptionCost);
 				console.log("Returning string "+returnCost);
 				//callback(returnCost);
-			});
-			this.calculateDemandCost(function(callbackFromCalcs){
-				//this.calculateTotalCost();
+		*/
+		});
+		this.calculateDemandCost(function(callbackFromCalcs){
+		/*		//this.calculateTotalCost();
 				console.log("Completed Demand Calculations");
 				console.log("Returning demand costs " + demandCost);
 				var returnCost = JSON.stringify(demandCost);
 				console.log("Returning demand Cost string "+returnCost);
-				calculateTotalCost(function(){
-					var returnCost = JSON.stringify(totalCost);
-					console.log("Returning total Cost string "+returnCost);
-					callback(returnCost);
-				});
-				
+				*/
+		});
+		this.calculateFixedCost(function(callbackFromCalcs){
+			calculateTotalCost(function(){
+				var returnCost = JSON.stringify(totalCost);
+				console.log("Returning total Cost string "+returnCost);
+				callback(returnCost);
 			});
-			this.calculateFixedCost();
-			//callback(this.totalCost);
-			//after returning all the values will need to make new 
-		}
+		});
+		//callback(this.totalCost);
+		//after returning all the values will need to make new 
+	}	
 }
+
 RateEngine.prototype.checkRateType = function (){
 	console.log("checkingRateType");
 	console.log(this.pricingModel.getRateType());
@@ -132,7 +142,6 @@ RateEngine.prototype.checkRateType = function (){
 
 RateEngine.prototype.calculateConsumptionCost = function(callback){
 	var consLength = consumption.length;
-	console.log("The lenght of the consumption Array is "+consLength); 
 	consumption.forEach(function(items)
 	{
 		//calculate the consumption 
@@ -162,7 +171,6 @@ RateEngine.prototype.calculateConsumptionCost = function(callback){
 }
 RateEngine.prototype.calculateDemandCost = function(callback){
 	var demandLength = demand.length;
-	console.log("The lenght of the demand Array is "+demandLength); 
 	demand.forEach(function(items)
 	{
 		//calculate the demand
@@ -189,15 +197,47 @@ RateEngine.prototype.calculateDemandCost = function(callback){
     	
 	});
 }
-RateEngine.prototype.calculateFixedCost = function(){
-	//this needs to be an average for the time given
+RateEngine.prototype.calculateFixedCost = function(callback){
+	//based off of all of the time values, we need to find out how many / what percentage of bills are part of the costs
+
+	var firstDate = new Date(consumption[0].time);
+	var lastDate = new Date(consumption[consumption.length-1].time);
+	var timeDiff = Math.abs(lastDate.getTime() - firstDate.getTime());
+	var hourDiff = timeDiff/(1000*3600);
+
+	//find out how many bills the time represents
+	//we assume a bill to be 30.42 days which equals 730.08 hours
+	var billProportion = hourDiff/730.08;
+	console.log("time porportion of bill : " + billProportion);
+
+	//call to the database to get all of the fixed rates for this LDC
+	dbCalculations.fixedCosts(function(rates){
+			//fixed cost for total consumption
+			console.log("bills fixed cost : "+rates);
+			var totalFixedCost = rates*billProportion;
+			console.log("total fixed cost for this consumption : "+totalFixedCost);
+
+			//each consumption point needs the correct porportion of fixed costs
+			var pointCost = totalFixedCost / consumption.length;
+			console.log("cost per point : " + pointCost);
+
+			//make new cost variables for each point in the totalCost array
+			consumption.forEach(function(item){
+				var newCost = new Cost();
+				newCost.setPoint(item.time,pointCost);
+				fixedCost.push(newCost);
+
+				if (fixedCost.length == consumption.length)
+					callback();
+			});
+    	});
 }
 
 function calculateTotalCost(callback){
 	console.log("in calculate total cost");
 	for (var i = 0; i<consumptionCost.length;i++){
 		var sum = 0;
-		sum = consumptionCost[i].amount + demandCost[i].amount;
+		sum = consumptionCost[i].amount + demandCost[i].amount + fixedCost[i].amount;
 		var finalCost = new Cost();
 		finalCost.setPoint(consumptionCost[i].time,sum);
 		totalCost.push(finalCost);
