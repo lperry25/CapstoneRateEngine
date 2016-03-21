@@ -14,24 +14,15 @@ var query = {
       });
   },
   //get the rateTypes that a given LDC offers in a given city (need city in case LDC operates in more than one location)
-  getRateTypesFromLDC : function(city, ldc, callback) {
-	var rateList = [];
-	//delete switch statement and use query instead to populate rateList
-	//then callback passing rateList
-	switch(ldc) {
-		case "London Hydro":
-			rateList = [{rateType: "Spot Market"}, {rateType: "Tiered"}, {rateType: "Time of Use"}];
-			break;
-		case "Big Apple Power":
-			rateList = [{rateType: "Tiered"}, {rateType: "Time of Use"}];
-			break;
-		case "Company 1":
-			rateList = [{rateType: "Time of Use"}];
-			break;
-		default:
-			rateList = [{rateType: "Default"}];
-	}
-	callback(rateList);  
+  getRateTypesFromLDC : function( ldc, callback) {
+    connection.query('SELECT rateType FROM LDC WHERE companyName = "'+ldc+'"', function(err, rows, fields) {
+        if(err) {
+          callback(err);
+          throw err;
+        } else {
+          callback(rows);
+        }
+      });
   },
   addRateType : function (post,callback){
     console.log(post);
@@ -127,48 +118,36 @@ var query = {
   },
   //grab all the countries that LDCs are located in
   getLDCCountries : function(callback) {
-	var countryList = [{country: "Canada"}, {country: "China"}, {country: "United States"}];
-	callback(countryList);
+    connection.query('SELECT DISTINCT country FROM LDC', function(err, rows, fields) {
+        if(err) {
+          callback(err);
+          throw err;
+        } else {
+          callback(rows);
+        }
+      });
   },
   //grab all cities located in a given country
   getCitiesInCountry : function(country, callback) {
-	var cityList = [];
-	//delete switch statement and use query instead to populate cityList
-	//then callback passing cityList
-	switch(country) {
-		case "Canada":
-			cityList = [{city: "Calgary"}, {city: "Kingston"}, {city: "London"}, {city: "Sarnia"}];
-			break;
-		case "China":
-			cityList = [{city: "Beijing"}, {city: "Shanghai"}];
-			break;
-		case "United States":
-			cityList = [{city: "Chicago"}, {city: "Houston"}, {city: "New York"}];
-			break;
-		default:
-			cityList = [{city: "Default"}];
-	}
-	callback(cityList);
+    connection.query('SELECT DISTINCT city FROM LDC WHERE country = "'+country+'"', function(err, rows, fields) {
+        if(err) {
+          callback(err);
+          throw err;
+        } else {
+          callback(rows);
+        }
+      });
   },
   //get all LDCs located in a given city
   getLDCsInCity : function(city, callback) {
-	var ldcList = [];
-	//delete switch statement and use query instead to populate ldcList
-	//then callback passing ldcList
-	switch(city) {
-		case "London":
-			ldcList = [{companyName: "London Hydro"}];
-			break;
-		case "New York":
-			ldcList = [{companyName: "NY Power"}, {companyName: "Big Apple Power"}];
-			break;
-		case "Shanghai":
-			ldcList = [{companyName: "Company 1"}, {companyName: "Company 2"}, {companyName: "Company 3"}];
-			break;
-		default:
-			ldcList = [{companyName: "Default"}];
-	}
-	callback(ldcList);
+    connection.query('SELECT DISTINCT companyName FROM LDC WHERE city = "'+city+'"', function(err, rows, fields) {
+        if(err) {
+          callback(err);
+          throw err;
+        } else {
+          callback(rows);
+        }
+      });
   },
   addLDC : function (post,callback){
     console.log(post);

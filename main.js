@@ -83,7 +83,7 @@ app.get('/getLDCsInCity', function(req, res) {
 
 //This request is to get all the rate types at a given LDC in a given city
 app.get('/getRateTypesFromLDC', function(req, res) {
-	query.getRateTypesFromLDC(req.query.city, req.query.ldc, function(rateList) {
+	query.getRateTypesFromLDC(req.query.ldc, function(rateList) {
 		res.setHeader('Access-Control-Allow-Origin', '*');
 		res.send(rateList);
 	});
