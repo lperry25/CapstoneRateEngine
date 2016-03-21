@@ -36,7 +36,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	fixedCost = new Array();
 	totalCost = new Array();
 
-	lcdID = getlcdID()
+	lcdID = 0;
 
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
@@ -76,19 +76,10 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		demand.push(inputDemand);
 	});
 
-/*
-	for (var i=0; i <array.length;i++){
-		var inputConsumption = new Consumption();
-		inputConsumption.setPoint(array[i],array[i+1]);
-		console.log("diplay new consumption point : "+ inputConsumption.getPoint());
-	}
 
-	//this.consumptionCost = body.consumption;
-	//console.log("Consumption passed : " + this.consumption);
-	body.consumption.forEach(function(item){
-		console.log("the consumption" + item);
-	});
-*/
+	//get the name of the LDC that we will be using for calculations
+	
+
 	//first check to see if this is a special rate type
 	if(this.checkRateType())
 	{
