@@ -4,19 +4,22 @@ var Demand = require( './demand' );
 var PricingModel = require( './pricingModel' );
 var DemandSum = require( './demandSum' );
 var Cost = require('./Cost' );
-//var EnergyCost = require('./EnergyCost');
 var TieredRateEngine = require( './tieredRateEngine' );
 var TimeOfUseRateEngine = require( './timeOfUseRateEngine' );
-
 var dbCalculations = require( '../rds/calculationQueries');
 
+
+//attributes
 var consumptionCost  = new Array();
 var consumption      = new Array();
 var demand           = new Array();
 var demandCost       = new Array();
 var fixedCost        = new Array();
 var totalCost        = new Array();
-var lcdID            = 0;
+var pricingModel     = new PricingModel();
+var ldcID            = 0;
+var isCommercial     = 0;
+
 
 var RateEngine = function() {
   /* ===== RateEngine Fields ===== */
@@ -35,22 +38,27 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	demandCost = new Array();
 	fixedCost = new Array();
 	totalCost = new Array();
+	ldcID = 0;
+	//default value is that it is not commercial, so there will be no demand calculations
+	isCommercial = 0;
 
-	lcdID = 0;
+	//set the pricingModel values
+	pricingModel = new PricingModel();
+	var str = body.pricingModel;
+	var json = JSON.stringify(eval("(" + str + ")"));
+	var pricingModelObj = JSON.parse(json);
+	console.log("the rate type from the body: "+pricingModelObj.rateType);
+	pricingModel.setRateType(pricingModelObj.rateType);
+	pricingModel.setLDC(pricingModelObj.ldc);
+	pricingModel.setCountry(pricingModelObj.country);
+	pricingModel.setCity(pricingModelObj.city);
 
+	
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
 	var str = body.consumption;
 	var json = JSON.stringify(eval("(" + str + ")"));
 	var conObj = JSON.parse(json);
-
-/*	//uncomment for testing
-	console.log("Made it to the rate Engine with Consumption "+ body.consumption);
-	console.log("body as a string : "+str);
-	console.log("body as a JSON : "+json);
-	console.log("display object : "+conObj[0].amount);
-*/
-	
 	conObj.forEach(function(item){
 		var inputConsumption = new Consumption();
 		inputConsumption.setPoint(item.time, item.amount);
@@ -58,86 +66,96 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	});
 
 
-	//parse demand into demand objects
-	var str = body.demand;
-	var json = JSON.stringify(eval("(" + str + ")"));
-	var demandObj = JSON.parse(json);
-
-/*	//uncomment for testing	
-	console.log("Made it to the rate Engine with Demand "+ body.demand);
-	console.log("body as a string : "+str);
-	console.log("body as a JSON : "+json);
-	console.log("display object : "+demandObj[0].amount);
-*/
+	//parse demand into demand objects if we are working with a commerical demand
 	
-	demandObj.forEach(function(item){
-		var inputDemand = new Demand();
-		inputDemand.setPoint(item.time, item.amount);
-		demand.push(inputDemand);
+	if (body.isCommercial != null)
+	{
+		if (body.isCommercial == "false")
+			isCommercial = 0;
+		else
+			isCommercial = 1;
+	}
+	console.log("is this commercial? "+ isCommercial);
+	//demand information is only done for commercial users
+	if (isCommercial){
+		console.log("you should only see this if it's commercial");
+		var str = body.demand;
+		var json = JSON.stringify(eval("(" + str + ")"));
+		var demandObj = JSON.parse(json);
+		demandObj.forEach(function(item){
+			var inputDemand = new Demand();
+			inputDemand.setPoint(item.time, item.amount);
+			demand.push(inputDemand);
+		});
+	}
+	
+
+	//get the id of the LDC that we will be using for calculations
+	this.getLDCid(function(callWait){
+		//first check to see if this is a special rate type
+		console.log("The rate type is "+pricingModel.getRateType());
+		if(pricingModel.getRateType() == "Tiered")
+		{
+			//do tiered calls here
+			console.log("the pricing module is tiered, it will not calculate");
+			callback("no calc done");
+		}
+		else if (pricingModel.getRateType() == "Time Of Use")
+		{
+			calculateToUConsumptionCost(function(callbackFromCalcs){
+				
+				//wait for consumption cost to be calculated
+				if (isCommercial){
+					calculateDemandCost(function(callbackFromCalcs){});
+				}
+				calculateFixedCost(function(callbackFromCalcs){
+				calculateTotalCost(function(){
+					var returnCost = JSON.stringify(totalCost);
+					console.log("Returning total Cost string "+returnCost);
+					callback(returnCost);
+				});
+			});
+
+			});
+			
+		}
+		else
+		{
+			//will need to edit this to use call backs
+			calculateConsumptionCost(function(callbackFromCalcs){});
+			if (isCommercial){
+				calculateDemandCost(function(callbackFromCalcs){});
+			}
+			calculateFixedCost(function(callbackFromCalcs){
+				calculateTotalCost(function(){
+					var returnCost = JSON.stringify(totalCost);
+					console.log("Returning total Cost string "+returnCost);
+					callback(returnCost);
+				});
+			});
+			
+		}
+
+	});	
+
+}
+RateEngine.prototype.getLDCid = function(callback){
+	console.log("the ldc name passed to the function is: " + pricingModel.getLDC());
+	dbCalculations.ldcID(pricingModel.getLDC(),pricingModel.getRateType(),function(id){
+		console.log("ldc call to database. got ldc ID : " + id);
+		ldcID = id;
+		callback();
 	});
 
-
-	//get the name of the LDC that we will be using for calculations
-	
-
-	//first check to see if this is a special rate type
-	if(this.checkRateType())
-	{
-		//will need to edit this to use call backs
-		this.calculateConsumptionCost(function(callbackFromCalcs){
-		/*		//this.calculateTotalCost();
-				console.log("Completed Conusumption Calculations");
-				console.log("Returning consumption costs " + consumptionCost);
-				var returnCost = JSON.stringify(consumptionCost);
-				console.log("Returning string "+returnCost);
-				//callback(returnCost);
-		*/
-		});
-		this.calculateDemandCost(function(callbackFromCalcs){
-		/*		//this.calculateTotalCost();
-				console.log("Completed Demand Calculations");
-				console.log("Returning demand costs " + demandCost);
-				var returnCost = JSON.stringify(demandCost);
-				console.log("Returning demand Cost string "+returnCost);
-				*/
-		});
-		this.calculateFixedCost(function(callbackFromCalcs){
-			calculateTotalCost(function(){
-				var returnCost = JSON.stringify(totalCost);
-				console.log("Returning total Cost string "+returnCost);
-				callback(returnCost);
-			});
-		});
-		//callback(this.totalCost);
-		//after returning all the values will need to make new 
-	}	
 }
 
-RateEngine.prototype.checkRateType = function (){
-	console.log("checkingRateType");
-	console.log(this.pricingModel.getRateType());
-	if (this.pricingModel.getRateType() == "Time Of Use")
-	{
-	//	var timeOfUseRE = new TimeOfUseRateEngine();
-		return false;
-	}
-	else if(this.pricingModel.getRateType() == "Tiered")
-	{
-	//	var tieredRE = new TieredRateEngine();
-		return false;
-	}
-	else{
-		return true;
-	}	
-}
-
-RateEngine.prototype.calculateConsumptionCost = function(callback){
+function calculateConsumptionCost(callback){
 	var consLength = consumption.length;
 	consumption.forEach(function(items)
 	{
 		//calculate the consumption 
 		//get the rate amount from the database
-		dbCalculations.regConsumption(function(rates){
+		dbCalculations.regConsumption(ldcID, items.time, function(rates){
     		//res.send(message);
     		console.log("consumption amount : "+items.amount);
     		console.log("rateAmount: "+rates);
@@ -160,13 +178,47 @@ RateEngine.prototype.calculateConsumptionCost = function(callback){
 	});
 	
 }
-RateEngine.prototype.calculateDemandCost = function(callback){
+function calculateToUConsumptionCost(callback){
+	var consLength = consumption.length;
+	consumption.forEach(function(items)
+	{
+		//find if the day of the week, is it a weekend
+
+
+		//get the hour the consumption is in
+
+		//calculate the consumption 
+		//get the rate amount from the database
+		dbCalculations.ToUConsumption(ldcID,items.time,function(rates){
+    		//res.send(message);
+    		console.log("consumption amount : "+items.amount);
+    		console.log("rateAmount: "+rates);
+    		//add a new consumptiion cost to the consumptionCost array
+    		var tempCost = new Cost();
+    		var calcCost = rates*items.amount;
+    		tempCost.setPoint(items.time,calcCost);
+    		console.log(tempCost);
+    		consumptionCost.push(tempCost);
+    		console.log("Value added to consumption cost : "+consumptionCost);
+    		//callback();
+    		//console.log(this.consumptionCost);
+    		//testConsCost.push(tempCost);
+    		console.log("consumptionCost length = " +consumptionCost.length);
+    		//if the consumptionCost array is as long as the consumption array, all calculations are complete
+    		if( consumptionCost.length == consLength )
+    			callback();
+    	});
+    	
+	});
+	
+}
+function calculateDemandCost(callback){
 	var demandLength = demand.length;
 	demand.forEach(function(items)
 	{
 		//calculate the demand
 		//get the rate amount from the database
-		dbCalculations.regDemand(function(rates){
+		dbCalculations.regDemand(ldcID,function(rates){
     		//res.send(message);
     		console.log("demand amount : "+items.amount);
     		console.log("rateAmount: "+rates);
@@ -188,7 +240,7 @@ RateEngine.prototype.calculateDemandCost = function(callback){
     	
 	});
 }
-RateEngine.prototype.calculateFixedCost = function(callback){
+function calculateFixedCost(callback){
 	//based off of all of the time values, we need to find out how many / what percentage of bills are part of the costs
 
 	var firstDate = new Date(consumption[0].time);
@@ -202,7 +254,7 @@ RateEngine.prototype.calculateFixedCost = function(callback){
 	console.log("time porportion of bill : " + billProportion);
 
 	//call to the database to get all of the fixed rates for this LDC
-	dbCalculations.fixedCosts(function(rates){
+	dbCalculations.fixedCosts(ldcID,function(rates){
 			//fixed cost for total consumption
 			console.log("bills fixed cost : "+rates);
 			var totalFixedCost = rates*billProportion;
@@ -228,7 +280,14 @@ function calculateTotalCost(callback){
 	console.log("in calculate total cost");
 	for (var i = 0; i<consumptionCost.length;i++){
 		var sum = 0;
-		sum = consumptionCost[i].amount + demandCost[i].amount + fixedCost[i].amount;
+		if (isCommercial)
+		{
+			sum = consumptionCost[i].amount + demandCost[i].amount + fixedCost[i].amount;
+		}
+		else
+		{
+			sum = consumptionCost[i].amount +fixedCost[i].amount;
+		}
 		var finalCost = new Cost();
 		finalCost.setPoint(consumptionCost[i].time,sum);
 		totalCost.push(finalCost);
