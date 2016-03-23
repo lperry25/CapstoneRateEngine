@@ -1,5 +1,6 @@
 var connection = require('./connection');
 var ldc = require('../models/ldc');
+var testCount = 1;
 
 
 var query = {
@@ -160,6 +161,19 @@ var query = {
           callback(rows);
         }
       });
+  },
+  calculateResidentialCost : function (data, callback){
+    console.log(data);
+	var consumptionArray = data.consumption;
+	var costArray = [];
+	
+	var length = consumptionArray.length;
+	for (var i=0; i<length; i++) {
+		costArray.push({time: consumptionArray[i].time,
+						amount: testCount});
+	}
+	callback(costArray);
+	testCount++;
   }
 };
 

@@ -11,6 +11,27 @@ var ldc = require('./models/ldc');
 
 var app = express();
 
+//********COPIED FROM https://gist.github.com/cuppster/2344435
+
+// ## CORS middleware
+// 
+// see: http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.send(200);
+    }
+    else {
+      next();
+    }
+};
+app.use(allowCrossDomain);
+//******************************************************************
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -115,6 +136,13 @@ app.put('/addTiered',function(req,res){
 app.put('/addTimeOfUse',function(req, res){
   query.addTimeOfUseRates(req.query,function(message) {
       res.send(message);
+    });
+});
+
+app.put('/calculateResidentialCost', function(req, res) {
+	query.calculateResidentialCost(req.body, function(costArray) {
+		console.log(costArray);
+		res.send(costArray);
     });
 });
 
