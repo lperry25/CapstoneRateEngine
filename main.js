@@ -15,6 +15,27 @@ var calc = require('./rds/calculationQueries');
 
 var app = express();
 
+//********COPIED FROM https://gist.github.com/cuppster/2344435
+
+// ## CORS middleware
+// 
+// see: http://stackoverflow.com/questions/7067966/how-to-allow-cors-in-express-nodejs
+var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      
+    // intercept OPTIONS method
+    if ('OPTIONS' == req.method) {
+      res.send(200);
+    }
+    else {
+      next();
+    }
+};
+app.use(allowCrossDomain);
+//******************************************************************
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -33,6 +54,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 var rateEngine = new RateEngine();
 
 app.put('/calculateCost',function(req,res){
+  console.log("In main");
   console.log(req.body.consumption);
   rateEngine.calculateCost(req.body, function(message) {
       console.log("Back to main");

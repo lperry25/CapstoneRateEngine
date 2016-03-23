@@ -31,6 +31,7 @@ var RateEngine = function() {
 
   /* ===== RateEngine methods ===== */
 RateEngine.prototype.calculateCost = function(body,callback) {
+	console.log("calculateCost");
 	//start by clearing all the variables used
 	consumption = new Array();
 	consumptionCost = new Array();
@@ -44,10 +45,11 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 	//set the pricingModel values
 	pricingModel = new PricingModel();
-	var str = body.pricingModel;
+	/* var str = body.pricingModel;
 	var json = JSON.stringify(eval("(" + str + ")"));
-	var pricingModelObj = JSON.parse(json);
-	console.log("the rate type from the body: "+pricingModelObj.rateType);
+	var pricingModelObj = JSON.parse(json); */
+	var pricingModelObj = body.pricingModel;
+	console.log("the rate type from the body: "+ pricingModelObj.rateType);
 	pricingModel.setRateType(pricingModelObj.rateType);
 	pricingModel.setLDC(pricingModelObj.ldc);
 	pricingModel.setCountry(pricingModelObj.country);
@@ -56,9 +58,10 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
-	var str = body.consumption;
+	/* var str = body.consumption;
 	var json = JSON.stringify(eval("(" + str + ")"));
-	var conObj = JSON.parse(json);
+	var conObj = JSON.parse(json); */
+	var conObj = body.consumption;
 	conObj.forEach(function(item){
 		var inputConsumption = new Consumption();
 		inputConsumption.setPoint(item.time, item.amount);
@@ -79,9 +82,10 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	//demand information is only done for commercial users
 	if (isCommercial){
 		console.log("you should only see this if it's commercial");
-		var str = body.demand;
+		/* var str = body.demand;
 		var json = JSON.stringify(eval("(" + str + ")"));
-		var demandObj = JSON.parse(json);
+		var demandObj = JSON.parse(json); */
+		var demandObj = body.demand;
 		demandObj.forEach(function(item){
 			var inputDemand = new Demand();
 			inputDemand.setPoint(item.time, item.amount);
