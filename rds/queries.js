@@ -1,5 +1,5 @@
 var connection = require('./connection');
-var ldc = require('../models/ldc');
+var ldc = require('../models/database/ldc');
 
 
 var query = {
@@ -107,6 +107,7 @@ var query = {
   },
   getLDCs : function (callback){
    connection.query('SELECT * FROM LDC', function(err, rows, fields) {
+        console.log(rows);
         if(err) {
           callback(err);
           throw err;
