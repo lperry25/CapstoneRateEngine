@@ -7,7 +7,11 @@ var bodyParser = require('body-parser');
 
 //var routes = require('./routes/index');
 var query = require('./rds/queries');
-var ldc = require('./models/ldc');
+var ldc = require('./models/database/ldc');
+var RateEngine = require('./models/rateEngine');
+
+//can most likely delete later. used for testing
+var calc = require('./rds/calculationQueries');
 
 var app = express();
 
@@ -41,13 +45,29 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(bodyParser.json());
 
-//LP: changed bodyParser.urlencoded extended from false to true
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+//rate calculation calls
+var rateEngine = new RateEngine();
+
+app.put('/calculateCost',function(req,res){
+  console.log("In main");
+  console.log(req.body.consumption);
+  rateEngine.calculateCost(req.body, function(message) {
+      console.log("Back to main");
+      res.send(message);
+      console.log("message sent");
+      res.end();
+  });
+});
+
+//database calls
+
 app.get('/getRateTypes',function(req, res){
+  console.log(req.body);
   query.getRateTypes(function(message) {
       res.send(message);
     });
@@ -136,13 +156,6 @@ app.put('/addTiered',function(req,res){
 app.put('/addTimeOfUse',function(req, res){
   query.addTimeOfUseRates(req.query,function(message) {
       res.send(message);
-    });
-});
-
-app.put('/calculateResidentialCost', function(req, res) {
-	query.calculateResidentialCost(req.body, function(costArray) {
-		console.log(costArray);
-		res.send(costArray);
     });
 });
 
