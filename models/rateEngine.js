@@ -2,14 +2,7 @@
 var Consumption = require( './consumption' );
 var Demand = require( './demand' );
 var PricingModel = require( './pricingModel' );
-<<<<<<< HEAD
 var Cost = require('./cost' );
-=======
-var DemandSum = require( './demandSum' );
-var Cost = require('./cost' );
-var TieredRateEngine = require( './tieredRateEngine' );
-var TimeOfUseRateEngine = require( './timeOfUseRateEngine' );
->>>>>>> master
 var dbCalculations = require( '../rds/calculationQueries');
 
 
@@ -302,37 +295,5 @@ function calculateTotalCost(callback){
 	}
 }
 
-<<<<<<< HEAD
 module.exports = RateEngine;
-=======
-RateEngine.prototype.calculateTotalCost() = function() {
-    return this.cost;
-};
 
-RateEngine.prototype.generateCostTime(cost,rateType) = function() {
-    return;
-};
-
-RateEngine.prototype.getCostTime() = function() {
-    return this.cost;
-};
-
-RateEngine.prototype.addPricingModel() = function() {
-    return;
-};
-
-RateEngine.prototype.updatePricingModel() = function() {
-    return;
-};
-
-RateEngine.prototype.deletePricingModel() = function() {
-    return;
-};
-
-RateEngine.prototype.getPricingModel() = function() {
-    return this.PricingModel;
-};
-
-*/
-module.exports = RateEngine;
->>>>>>> master
