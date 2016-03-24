@@ -1,6 +1,6 @@
 /*var util = require('util');
 var DemandSum = require( './demandSum' );
-var RateEngine = require( './RateEngine' );
+var RateEngine = require( './rateEngine' );
 
 var TieredRateEngine = function(){
 	this.demandSum = new DemandSum();
