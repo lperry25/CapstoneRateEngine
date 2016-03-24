@@ -23,7 +23,7 @@ var calc = {
  /*  connection.query('SELECT rateAmount FROM Rates WHERE units = "kWh" AND LDCid = '+ldc+
    	' AND endDate IS null OR units = "kWh" AND LDCid = '+HOEPid+' AND startDate = "'+timePeriod+'"', function(err, rows, fields) {
    		*/
-   	connection.query('SELECT rateAmount FROM Rates WHERE units = "kWh" AND LDCid = '+ldc+' AND endDate IS null', function(err, rows, fields) {
+   	connection.query('SELECT rateAmount FROM Rates WHERE units = "kWh" AND LDCid = '+ldc+' AND endDate IS null OR units="kWh" AND LDCid =' + HOEPid + ' AND startDate <= "'+timePeriod+'" AND endDate >= "'+timePeriod+'"', function(err, rows, fields) {
         console.log("consumption rows returned "+rows);
         if(err) {
           callback(err);
@@ -37,8 +37,10 @@ var calc = {
         }
       });
   },
-  ToUConsumption : function (ldc, timeFrame, callback){
-   connection.query('SELECT rateAmount FROM Rates WHERE units = "kWh" AND LDCid = '+ldc, function(err, rows, fields) {
+  ToUConsumption : function (ldc, timeFrame, isWeekend, callback){
+    console.log("in the fucking ToU query with this time "+timeFrame);
+   connection.query('SELECT rateAmount FROM TimeOfUse WHERE LDCid = '+ldc+' AND startHour <= "'+timeFrame+'" AND endHour >= "'+timeFrame+'" AND isWeekend = '+isWeekend+' AND endDate IS null', function(err, rows, fields) {
+        console.log("what is the timeFrame? "+timeFrame);
         console.log("consumption rows returned "+rows);
         if(err) {
           callback(err);

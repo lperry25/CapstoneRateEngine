@@ -45,10 +45,13 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 	//set the pricingModel values
 	pricingModel = new PricingModel();
-	/* var str = body.pricingModel;
-	var json = JSON.stringify(eval("(" + str + ")"));
-	var pricingModelObj = JSON.parse(json); */
 	var pricingModelObj = body.pricingModel;
+
+	//uncomment when testing on postman
+	var str = body.pricingModel;
+	var json = JSON.stringify(eval("(" + str + ")"));
+	var pricingModelObj = JSON.parse(json); 
+	
 	console.log("the rate type from the body: "+ pricingModelObj.rateType);
 	pricingModel.setRateType(pricingModelObj.rateType);
 	pricingModel.setLDC(pricingModelObj.ldc);
@@ -58,10 +61,13 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
-	/* var str = body.consumption;
-	var json = JSON.stringify(eval("(" + str + ")"));
-	var conObj = JSON.parse(json); */
 	var conObj = body.consumption;
+
+	//uncomment when testing on postman
+	var str = body.consumption;
+	var json = JSON.stringify(eval("(" + str + ")"));
+	var conObj = JSON.parse(json); 
+	
 	conObj.forEach(function(item){
 		var inputConsumption = new Consumption();
 		inputConsumption.setPoint(item.time, item.amount);
@@ -81,11 +87,13 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	console.log("is this commercial? "+ isCommercial);
 	//demand information is only done for commercial users
 	if (isCommercial){
-		console.log("you should only see this if it's commercial");
-		/* var str = body.demand;
-		var json = JSON.stringify(eval("(" + str + ")"));
-		var demandObj = JSON.parse(json); */
 		var demandObj = body.demand;
+
+		//uncomment when testing on postman
+		var str = body.demand;
+		var json = JSON.stringify(eval("(" + str + ")"));
+		var demandObj = JSON.parse(json); 
+		
 		demandObj.forEach(function(item){
 			var inputDemand = new Demand();
 			inputDemand.setPoint(item.time, item.amount);
@@ -106,7 +114,9 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		}
 		else if (pricingModel.getRateType() == "Time Of Use")
 		{
+			console.log("In thie time of use if statement");
 			calculateToUConsumptionCost(function(callbackFromCalcs){
+				console.log("in the ToUConsumption function");
 				
 				//wait for consumption cost to be calculated
 				if (isCommercial){
@@ -148,6 +158,7 @@ RateEngine.prototype.getLDCid = function(callback){
 	dbCalculations.ldcID(pricingModel.getLDC(),pricingModel.getRateType(),function(id){
 		console.log("ldc call to database. got ldc ID : " + id);
 		ldcID = id;
+		console.log("so the ldcID value is : " + ldcID);
 		callback();
 	});
 
@@ -186,14 +197,28 @@ function calculateToUConsumptionCost(callback){
 	var consLength = consumption.length;
 	consumption.forEach(function(items)
 	{
+
 		//find if the day of the week, is it a weekend
+		//if the date is a string, then we need to make the time variable a date first
+		var newDate = new Date(items.time);
 
+		console.log("what is the time " + items.time);
+		var dayOfTheWeek = newDate.getDay();
+		var isWeekend = false;
+		if (dayOfTheWeek == 6 || dayOfTheWeek == 7)
+			isWeekend = true;
 
-		//get the hour the consumption is in
+		console.log("is it the weekend ? "+isWeekend);
+
+		//remove the day from the consumption time string
+		var splits = items.time.split(" ");
+		var timeToSend = splits[1];
+		console.log("the time i am sending to database is " + timeToSend);
+
 
 		//calculate the consumption 
 		//get the rate amount from the database
-		dbCalculations.ToUConsumption(ldcID,items.time,function(rates){
+		dbCalculations.ToUConsumption(ldcID,timeToSend,isWeekend,function(rates){
     		//res.send(message);
     		console.log("consumption amount : "+items.amount);
     		console.log("rateAmount: "+rates);
@@ -256,6 +281,7 @@ function calculateFixedCost(callback){
 	//we assume a bill to be 30.42 days which equals 730.08 hours
 	var billProportion = hourDiff/730.08;
 	console.log("time porportion of bill : " + billProportion);
+	console.log("what's the ldcID? "+ldcID);
 
 	//call to the database to get all of the fixed rates for this LDC
 	dbCalculations.fixedCosts(ldcID,function(rates){
