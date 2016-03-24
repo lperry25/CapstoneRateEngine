@@ -118,7 +118,7 @@ var query = {
   },
   //grab all the countries that LDCs are located in
   getLDCCountries : function(callback) {
-    connection.query('SELECT DISTINCT country FROM LDC', function(err, rows, fields) {
+    connection.query('SELECT DISTINCT country FROM LDC WHERE companyName != "HOEP"', function(err, rows, fields) {
         if(err) {
           callback(err);
           throw err;
