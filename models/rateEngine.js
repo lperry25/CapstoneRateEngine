@@ -200,8 +200,18 @@ function calculateToUConsumptionCost(callback){
 
 
 		//remove the day from the consumption time string
-		var splits = items.time.split(" ");
-		var timeToSend = splits[1];
+		//first check to make sure time is not null, to avoid the server from crashing
+		if (items.time != null)
+		{
+			console.log("time is not null");
+			var splits = items.time.split(" ");
+			var timeToSend = splits[1];
+		}
+		else 
+			var timeToSend = 0;
+		console.log("time was null " +items.time);
+		
+		
 
 
 		//calculate the consumption 
