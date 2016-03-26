@@ -4,6 +4,8 @@ var Demand = require( './demand' );
 var PricingModel = require( './pricingModel' );
 var Cost = require('./cost' );
 var dbCalculations = require( '../rds/calculationQueries');
+var Sort = require('node-sort');
+var sort = new Sort();
 
 
 //attributes
@@ -39,6 +41,11 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	ldcID = 0;
 	//default value is that it is not commercial, so there will be no demand calculations
 	isCommercial = 0;
+        var totalCostComparator = function( a, b ) {
+          if( new Date(a.time) > new Date(b.time) ) return 1;
+          else if (new Date(a.time) < new Date(b.time)) return -1;
+          else if (new Date(a.time) == new Date(b.time)) return 0;
+        };
 
 	//set the pricingModel values
 	pricingModel = new PricingModel();
@@ -113,7 +120,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 				}
 				calculateFixedCost(function(callbackFromCalcs){
 				calculateTotalCost(function(){
-					var returnCost = JSON.stringify(totalCost);
+                                        var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator));
 					console.log("Returning total Cost string "+returnCost);
 					callback(returnCost);
 				});
@@ -131,7 +138,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 			}
 			calculateFixedCost(function(callbackFromCalcs){
 				calculateTotalCost(function(){
-					var returnCost = JSON.stringify(totalCost);
+                                        var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator));
 					console.log("Returning total Cost string "+returnCost);
 					callback(returnCost);
 				});
