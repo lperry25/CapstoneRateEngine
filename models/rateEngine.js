@@ -18,6 +18,7 @@ var totalCost        = new Array();
 var pricingModel     = new PricingModel();
 var ldcID            = 0;
 var isCommercial     = 0;
+var totalCostValue   = 0;
 
 
 var RateEngine = function() {
@@ -39,6 +40,8 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	fixedCost = new Array();
 	totalCost = new Array();
 	ldcID = 0;
+	totalCostValue = 0;
+
 	//default value is that it is not commercial, so there will be no demand calculations
 	isCommercial = 0;
         var totalCostComparator = function( a, b ) {
@@ -72,7 +75,6 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	var json = JSON.stringify(eval("(" + str + ")"));
 	var conObj = JSON.parse(json); 
 */
-
 	conObj.forEach(function(item){
 		var inputConsumption = new Consumption();
 		inputConsumption.setPoint(item.time, item.amount);
@@ -94,10 +96,10 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		var demandObj = body.demand;
 
 		//uncomment when testing on postman
-	/*	var str = body.demand;
+/*		var str = body.demand;
 		var json = JSON.stringify(eval("(" + str + ")"));
 		var demandObj = JSON.parse(json); 
-	*/
+*/	
 		
 		demandObj.forEach(function(item){
 			var inputDemand = new Demand();
@@ -120,9 +122,14 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 				}
 				calculateFixedCost(function(callbackFromCalcs){
 				calculateTotalCost(function(){
-                                        var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator));
-					console.log("Returning total Cost string "+returnCost);
-					callback(returnCost);
+                    //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+                    totalCostValue = Math.round(totalCostValue*100)/100
+                    var returnCostValue = totalCostValue.toString();
+					var returnObject = {totalCost: totalCostValue,
+							  costArray: totalCost};
+					callback(returnObject);
+					//callback(returnCost);
 				});
 			});
 
@@ -138,9 +145,13 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 			}
 			calculateFixedCost(function(callbackFromCalcs){
 				calculateTotalCost(function(){
-                                        var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator));
-					console.log("Returning total Cost string "+returnCost);
-					callback(returnCost);
+                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+                    totalCostValue = Math.round(totalCostValue*100)/100
+                    var returnCostValue = totalCostValue.toString();
+					var returnObject = {totalCost: totalCostValue,
+							  costArray: totalCost};
+					callback(returnObject);
+					//callback(returnCost);
 				});
 			});
 			
@@ -210,13 +221,15 @@ function calculateToUConsumptionCost(callback){
 		//first check to make sure time is not null, to avoid the server from crashing
 		if (items.time != null)
 		{
-			console.log("time is not null");
 			var splits = items.time.split(" ");
 			var timeToSend = splits[1];
 		}
 		else 
+		{
 			var timeToSend = 0;
-		console.log("time was null " +items.time);
+			console.log("time was null " +items.time);
+		}
+		
 		
 		
 
@@ -299,10 +312,16 @@ function calculateTotalCost(callback){
 		if (isCommercial)
 		{
 			sum = consumptionCost[i].amount + demandCost[i].amount + fixedCost[i].amount;
+			totalCostValue = totalCostValue + sum;
+			//round the sum to only two digits
+			sum = Math.round(sum*100)/100;
 		}
 		else
 		{
 			sum = consumptionCost[i].amount +fixedCost[i].amount;
+			totalCostValue = totalCostValue + sum;
+			//round the sum to only two digits
+			sum = Math.round(sum*100)/100;
 		}
 		var finalCost = new Cost();
 		finalCost.setPoint(consumptionCost[i].time,sum);

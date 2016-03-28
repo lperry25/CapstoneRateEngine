@@ -55,10 +55,12 @@ var rateEngine = new RateEngine();
 
 app.put('/calculateCost',function(req,res){
   console.log("In main");
-  console.log(req.body.consumption);
+  //console.log(req.body.consumption);
   rateEngine.calculateCost(req.body, function(message) {
       console.log("Back to main");
+      console.log("The total cost is : "+message.totalCost);
       res.send(message);
+      var test = 
       console.log("message sent");
       res.end();
   });
