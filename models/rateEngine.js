@@ -19,6 +19,7 @@ var pricingModel     = new PricingModel();
 var ldcID            = 0;
 var isCommercial     = 0;
 var totalCostValue   = 0;
+var readyToSendBack  = 0;
 
 
 var RateEngine = function() {
@@ -41,6 +42,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	totalCost = new Array();
 	ldcID = 0;
 	totalCostValue = 0;
+	readyToSendBack  = 0;
 
 	//default value is that it is not commercial, so there will be no demand calculations
 	isCommercial = 0;
@@ -54,6 +56,8 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	pricingModel = new PricingModel();
 	var pricingModelObj = body.pricingModel;
 
+	
+
 	//uncomment when testing on postman
 /*	var str = body.pricingModel;
 	var json = JSON.stringify(eval("(" + str + ")"));
@@ -65,6 +69,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	pricingModel.setCountry(pricingModelObj.country);
 	pricingModel.setCity(pricingModelObj.city);
 
+	console.log("The pricing model is "+pricingModel.getRateType());
 	
 	//parese the data into the correct objects
 	//parse consumption into consumption objects
@@ -116,6 +121,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		{
 			calculateToUConsumptionCost(function(callbackFromCalcs){
 				
+
 				//wait for consumption cost to be calculated
 				if (isCommercial){
 					calculateDemandCost(function(callbackFromCalcs){});
@@ -139,24 +145,25 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		else
 		{
 			//will need to edit this to use call backs
-			calculateConsumptionCost(function(callbackFromCalcs){});
-			if (isCommercial){
-				calculateDemandCost(function(callbackFromCalcs){});
-			}
-			calculateFixedCost(function(callbackFromCalcs){
-				calculateTotalCost(function(){
-                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
-                    totalCostValue = Math.round(totalCostValue*100)/100
-                    var returnCostValue = totalCostValue.toString();
-					var returnObject = {totalCost: totalCostValue,
-							  costArray: totalCost};
-					callback(returnObject);
-					//callback(returnCost);
+			calculateConsumptionCost(function(callbackFromCalcs){
+				if (isCommercial){
+					calculateDemandCost(function(callbackFromCalcs){});
+				}	
+				calculateFixedCost(function(callbackFromCalcs){
+					calculateTotalCost(function(){
+	                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+	                    totalCostValue = Math.round(totalCostValue*100)/100
+	                    var returnCostValue = totalCostValue.toString();
+						var returnObject = {totalCost: totalCostValue,
+								  costArray: totalCost};
+  
+						callback(returnObject);
+						//callback(returnCost);
+					});
 				});
 			});
-			
+						
 		}
-
 	});	
 
 }
@@ -196,7 +203,9 @@ function calculateConsumptionCost(callback){
     		
     		//if the consumptionCost array is as long as the consumption array, all calculations are complete
     		if( consumptionCost.length == consLength )
+    		{
     			callback();
+    		}
     	});
     	
 	});
@@ -213,7 +222,7 @@ function calculateToUConsumptionCost(callback){
 
 		var dayOfTheWeek = newDate.getDay();
 		var isWeekend = false;
-		if (dayOfTheWeek == 6 || dayOfTheWeek == 7)
+		if (dayOfTheWeek == 6 || dayOfTheWeek == 0)
 			isWeekend = true;
 
 
@@ -237,6 +246,7 @@ function calculateToUConsumptionCost(callback){
 		//calculate the consumption 
 		//get the rate amount from the database
 		dbCalculations.ToUConsumption(ldcID,timeToSend,isWeekend,function(rates){
+
     		
     		//add a new consumptiion cost to the consumptionCost array
     		var tempCost = new Cost();
@@ -247,7 +257,9 @@ function calculateToUConsumptionCost(callback){
 
     		//if the consumptionCost array is as long as the consumption array, all calculations are complete
     		if( consumptionCost.length == consLength )
+    		{
     			callback();
+    		}
     	});
     	
 	});
@@ -260,8 +272,8 @@ function calculateDemandCost(callback){
 		//calculate the demand
 		//get the rate amount from the database
 		dbCalculations.regDemand(ldcID,function(rates){
-    		
-    		//add a new consumptiion cost to the demandCost array
+
+			//add a new consumptiion cost to the demandCost array
     		var tempCost = new Cost();
     		var calcCost = rates*items.amount;
     		tempCost.setPoint(items.time,calcCost);

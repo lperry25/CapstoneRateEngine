@@ -26,6 +26,7 @@ var calc = {
           callback(err);
           throw err;
         } else {
+          
         	var rateAmountSum = 0;
         	rows.forEach(function(item){
         		rateAmountSum = rateAmountSum + item.rateAmount;
@@ -43,6 +44,7 @@ var calc = {
           callback(err);
           throw err;
         } else {
+          
         	var rateAmountSum = 0;
         	rows.forEach(function(item){
         		rateAmountSum = rateAmountSum + item.rateAmount;
