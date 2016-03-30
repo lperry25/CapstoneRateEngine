@@ -128,45 +128,70 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 				//wait for consumption cost to be calculated
 				if (isCommercial){
-					calculateDemandCost(function(callbackFromCalcs){});
+					calculateDemandCost(function(callbackFromCalcs){
+						calculateFixedCost(function(callbackFromCalcs){
+							calculateTotalCost(function(){
+			                    //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+			                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+			                    totalCostValue = Math.round(totalCostValue*100)/100
+			                    var returnCostValue = totalCostValue.toString();
+								var returnObject = {totalCost: totalCostValue,
+										  costArray: totalCost};
+								callback(returnObject);
+								//callback(returnCost);
+							});
+						});
+					});
 				}
-				calculateFixedCost(function(callbackFromCalcs){
-				calculateTotalCost(function(){
-                    //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
-                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
-                    totalCostValue = Math.round(totalCostValue*100)/100
-                    var returnCostValue = totalCostValue.toString();
-					var returnObject = {totalCost: totalCostValue,
-							  costArray: totalCost};
-					callback(returnObject);
-					//callback(returnCost);
-				});
-			});
-
-			});
-			
+				else
+				{
+					calculateFixedCost(function(callbackFromCalcs){
+						calculateTotalCost(function(){
+		                    //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+		                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+		                    totalCostValue = Math.round(totalCostValue*100)/100
+		                    var returnCostValue = totalCostValue.toString();
+							var returnObject = {totalCost: totalCostValue,
+									  costArray: totalCost};
+							callback(returnObject);
+							//callback(returnCost);
+						});
+					});
+				}
+			});	
 		}
 		else
 		{
 			//will need to edit this to use call backs
 			calculateConsumptionCost(function(callbackFromCalcs){
 				if (isCommercial){
-					calculateDemandCost(function(callbackFromCalcs){});
-				}	
-				calculateFixedCost(function(callbackFromCalcs){
-					calculateTotalCost(function(){
-	                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
-	                    totalCostValue = Math.round(totalCostValue*100)/100
-	                    var returnCostValue = totalCostValue.toString();
-						var returnObject = {totalCost: totalCostValue,
-								  costArray: totalCost};
-  
-						callback(returnObject);
-						//callback(returnCost);
+					calculateDemandCost(function(callbackFromCalcs){
+						calculateFixedCost(function(callbackFromCalcs){
+							calculateTotalCost(function(){
+			                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+			                    totalCostValue = Math.round(totalCostValue*100)/100
+			                    var returnCostValue = totalCostValue.toString();
+								var returnObject = {totalCost: totalCostValue,
+										  costArray: totalCost};
+								callback(returnObject);
+							});
+						});
 					});
-				});
-			});
-						
+				}
+				else
+				{
+					calculateFixedCost(function(callbackFromCalcs){
+						calculateTotalCost(function(){
+		                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
+		                    totalCostValue = Math.round(totalCostValue*100)/100
+		                    var returnCostValue = totalCostValue.toString();
+							var returnObject = {totalCost: totalCostValue,
+									  costArray: totalCost};
+							callback(returnObject);
+						});
+					});
+				}	
+			});			
 		}
 	});	
 
@@ -320,6 +345,14 @@ function calculateFixedCost(callback){
 					callback();
 			});
     	});
+}
+
+function maxDemand(){
+	var currentMax = 0
+	demand.forEach(function(item){
+		if (item.amount > currentMax)
+			currentMax = item.amount;
+	});
 }
 
 function calculateTotalCost(callback){

@@ -13,7 +13,7 @@ var connection = mysql.createConnection({
 */
 
 var connection = mysql.createPool({
-  connectionLimit : 40,
+  connectionLimit : 49,
   host     : 'rateengine.chjpa4e5niju.us-west-2.rds.amazonaws.com',
   user     : 'capstone',
   password : 'capstone',
