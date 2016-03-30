@@ -94,7 +94,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 
 	//parse demand into demand objects if we are working with a commerical demand
-	console.log("the sent isCommercial value is "+ body.isCommercial);
+	//console.log("the sent isCommercial value is "+ body.isCommercial);
 
 	if (body.isCommercial != null)
 	{
@@ -109,7 +109,7 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		}
 	}
 
-	console.log("the is commercial variable is " + isCommercial);
+	//console.log("the is commercial variable is " + isCommercial);
 
 	//demand information is only done for commercial users
 	if (isCommercial){
@@ -367,9 +367,11 @@ function maxDemand(returnDemand){
 }
 
 function calculateTotalCost(callback){
+	console.log("demand porportion is " + demandProp);
 	for (var i = 0; i<consumptionCost.length;i++){
 		
 		var sum = 0;
+
 		sum = consumptionCost[i].amount +fixedCost[i].amount + demandProp;
 		totalCostValue = totalCostValue + sum;
 		//round the sum to only two digits
