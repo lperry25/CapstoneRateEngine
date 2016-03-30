@@ -58,7 +58,7 @@ var calc = {
   regDemand : function (ldc, callback){
   	//need to retrieve all the kWh recent rates from the Rates Table
     connection.getConnection(function(err, connection) {
-   connection.query('SELECT rateAmount FROM Rates WHERE units = "kW" AND LDCid = '+ldc, function(err, rows, fields) {
+   connection.query('SELECT rateAmount FROM Rates WHERE units = "kW" AND LDCid = '+ldc+' AND endDate IS null', function(err, rows, fields) {
         if(err) {
           callback(err);
           throw err;

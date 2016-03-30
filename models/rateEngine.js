@@ -20,6 +20,8 @@ var ldcID            = 0;
 var isCommercial     = 0;
 var totalCostValue   = 0;
 var readyToSendBack  = 0;
+var currentMaxDemand = 0;
+var demandProp       = 0;
 
 
 var RateEngine = function() {
@@ -43,14 +45,18 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	ldcID = 0;
 	totalCostValue = 0;
 	readyToSendBack  = 0;
+	currentMaxDemand = 0;
+	demandProp = 0;
 
 	//default value is that it is not commercial, so there will be no demand calculations
 	isCommercial = 0;
-        var totalCostComparator = function( a, b ) {
-          if( new Date(a.time) > new Date(b.time) ) return 1;
-          else if (new Date(a.time) < new Date(b.time)) return -1;
-          else if (new Date(a.time) == new Date(b.time)) return 0;
-        };
+
+
+    var totalCostComparator = function( a, b ) {
+    	if( new Date(a.time) > new Date(b.time) ) return 1;
+        else if (new Date(a.time) < new Date(b.time)) return -1;
+        else if (new Date(a.time) == new Date(b.time)) return 0;
+    };
 
 	//set the pricingModel values
 	pricingModel = new PricingModel();
@@ -93,28 +99,36 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	if (body.isCommercial != null)
 	{
 		if (body.isCommercial == false)
+		{
 			isCommercial = 0;
+		}
 		else
+		{
 			isCommercial = 1;
+
+		}
 	}
 
 	console.log("the is commercial variable is " + isCommercial);
 
 	//demand information is only done for commercial users
 	if (isCommercial){
-		var demandObj = body.demand;
+		//var demandObj = body.demand;
 
 		//uncomment when testing on postman
 /*		var str = body.demand;
 		var json = JSON.stringify(eval("(" + str + ")"));
 		var demandObj = JSON.parse(json); 
-*/	
+	
 		
 		demandObj.forEach(function(item){
 			var inputDemand = new Demand();
 			inputDemand.setPoint(item.time, item.amount);
 			demand.push(inputDemand);
 		});
+*/
+		if (body.maxDemand != null)
+				currentMaxDemand = body.maxDemand;
 	}
 	
 
@@ -125,21 +139,19 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 		{
 			calculateToUConsumptionCost(function(callbackFromCalcs){
 				
-
 				//wait for consumption cost to be calculated
 				if (isCommercial){
-					calculateDemandCost(function(callbackFromCalcs){
-						calculateFixedCost(function(callbackFromCalcs){
-							calculateTotalCost(function(){
-			                    //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
-			                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
-			                    totalCostValue = Math.round(totalCostValue*100)/100
-			                    var returnCostValue = totalCostValue.toString();
-								var returnObject = {totalCost: totalCostValue,
-										  costArray: totalCost};
-								callback(returnObject);
-								//callback(returnCost);
-							});
+					calculateDemandCost(function(callbackFromCalcs){});
+						
+					calculateFixedCost(function(callbackFromCalcs){
+						calculateTotalCost(function(){
+				            //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+				            totalCost = sort.mergeSort(totalCost, totalCostComparator);
+				            totalCostValue = Math.round(totalCostValue*100)/100;
+				            var returnCostValue = totalCostValue.toString();
+							var returnObject = {totalCost: totalCostValue,
+											  costArray: totalCost};
+							callback(returnObject);
 						});
 					});
 				}
@@ -165,16 +177,17 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 			//will need to edit this to use call backs
 			calculateConsumptionCost(function(callbackFromCalcs){
 				if (isCommercial){
-					calculateDemandCost(function(callbackFromCalcs){
-						calculateFixedCost(function(callbackFromCalcs){
-							calculateTotalCost(function(){
-			                    totalCost = sort.mergeSort(totalCost, totalCostComparator);
-			                    totalCostValue = Math.round(totalCostValue*100)/100
-			                    var returnCostValue = totalCostValue.toString();
-								var returnObject = {totalCost: totalCostValue,
-										  costArray: totalCost};
-								callback(returnObject);
-							});
+					calculateDemandCost(function(callbackFromCalcs){});
+						
+					calculateFixedCost(function(callbackFromCalcs){
+						calculateTotalCost(function(){
+				            //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+				            totalCost = sort.mergeSort(totalCost, totalCostComparator);
+				            totalCostValue = Math.round(totalCostValue*100)/100;
+				            var returnCostValue = totalCostValue.toString();
+							var returnObject = {totalCost: totalCostValue,
+											  costArray: totalCost};
+							callback(returnObject);
 						});
 					});
 				}
@@ -217,8 +230,6 @@ function calculateConsumptionCost(callback){
 
 	consumption.forEach(function(items)
 	{
-
-
 		//calculate the consumption 
 		//get the rate amount from the database
 		dbCalculations.regConsumption(ldcID, items.time,hoep, function(rates){
@@ -269,9 +280,6 @@ function calculateToUConsumptionCost(callback){
 		}
 		
 		
-		
-
-
 		//calculate the consumption 
 		//get the rate amount from the database
 		dbCalculations.ToUConsumption(ldcID,timeToSend,isWeekend,function(rates){
@@ -295,25 +303,21 @@ function calculateToUConsumptionCost(callback){
 	
 }
 function calculateDemandCost(callback){
-	var demandLength = demand.length;
-	demand.forEach(function(items)
-	{
-		//calculate the demand
-		//get the rate amount from the database
+
+	//demandMax(function(callbackVal){
+		
 		dbCalculations.regDemand(ldcID,function(rates){
 
-			//add a new consumptiion cost to the demandCost array
-    		var tempCost = new Cost();
-    		var calcCost = rates*items.amount;
-    		tempCost.setPoint(items.time,calcCost);
-    		demandCost.push(tempCost);
-    		
-    		//if the demandCost array is as long as the demand array, all calculations are complete
-    		if( demandCost.length == demandLength )
-    			callback();
+			//calculate the total cost
+			var totalDemandCost = rates * currentMaxDemand;
+
+			//find the average demand cost per consumption point
+			demandProp = totalDemandCost / consumption.length;
+
+	    	callback();
     	});
-    	
-	});
+//	});
+	
 }
 function calculateFixedCost(callback){
 	//based off of all of the time values, we need to find out how many / what percentage of bills are part of the costs
@@ -347,31 +351,30 @@ function calculateFixedCost(callback){
     	});
 }
 
-function maxDemand(){
-	var currentMax = 0
+function maxDemand(returnDemand){
+	var count = 0;
 	demand.forEach(function(item){
 		if (item.amount > currentMax)
+		{
 			currentMax = item.amount;
+			console.log("the currentMax" + currentMax);
+		}
+		count = count +1;
+		if (count > demand.length)
+			returnDemand();
 	});
+
 }
 
 function calculateTotalCost(callback){
 	for (var i = 0; i<consumptionCost.length;i++){
+		
 		var sum = 0;
-		if (isCommercial)
-		{
-			sum = consumptionCost[i].amount + demandCost[i].amount + fixedCost[i].amount;
-			totalCostValue = totalCostValue + sum;
-			//round the sum to only two digits
-			sum = Math.round(sum*100)/100;
-		}
-		else
-		{
-			sum = consumptionCost[i].amount +fixedCost[i].amount;
-			totalCostValue = totalCostValue + sum;
-			//round the sum to only two digits
-			sum = Math.round(sum*100)/100;
-		}
+		sum = consumptionCost[i].amount +fixedCost[i].amount + demandProp;
+		totalCostValue = totalCostValue + sum;
+		//round the sum to only two digits
+		sum = Math.round(sum*100)/100;
+		
 		var finalCost = new Cost();
 		finalCost.setPoint(consumptionCost[i].time,sum);
 		totalCost.push(finalCost);
