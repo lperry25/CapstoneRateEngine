@@ -88,14 +88,18 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 
 	//parse demand into demand objects if we are working with a commerical demand
-	
+	console.log("the sent isCommercial value is "+ body.isCommercial);
+
 	if (body.isCommercial != null)
 	{
-		if (body.isCommercial == "false")
+		if (body.isCommercial == false)
 			isCommercial = 0;
 		else
 			isCommercial = 1;
 	}
+
+	console.log("the is commercial variable is " + isCommercial);
+
 	//demand information is only done for commercial users
 	if (isCommercial){
 		var demandObj = body.demand;
