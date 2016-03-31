@@ -78,22 +78,22 @@ var query = {
       }
     });
   },
-  addRates : function (post,callback){
+  addRates : function (body,callback){
     //Need to make sure the date is entered properly into the database
-    console.log(post);
+    console.log(body);
     connection.getConnection(function(err, connection) {
       if(err) {
         console.log(err);
         throw err;
       } else {
-        connection.query('INSERT INTO Rates SET ?',post, function(err, rows, fields) {
+        connection.query('INSERT INTO Rates SET ?',{LDCid: body.LDCid, rateName: body.rateName, startDate: body.startDate, endDate: body.endDate, units: body.units, rateAmount: body.rateAmount}, function(err, results) {
           if(err) {
             console.log(err);
             throw err;
           } else {
             connection.release();
-            console.log(rows.insertId);
-            callback(rows);
+            console.log(results.insertId);
+            callback(results.insertId);
           }
         });
       }
@@ -156,22 +156,22 @@ var query = {
       };
     });
   },
-  addTimeOfUseRates : function (post,callback){
+  addTimeOfUseRates : function (body,callback){
     //Need to make sure the date is entered properly into the database
-    console.log(post);
+    console.log(body);
     connection.getConnection(function(err, connection) {
       if(err) {
         console.log(err);
         throw err;
       } else {
-        connection.query('INSERT INTO TimeOfUse SET ?',post, function(err, rows, fields) {
+        connection.query('INSERT INTO TimeOfUse SET ?',{LDCid: body.LDCid, rateName: body.rateName, startDate: body.startDate, endDate: body.endDate, peakLevel: body.peakLevel, startHour: body.startHour, endHour: body.endHour, units: body.units, rateAmount: body.rateAmount, isWeekend: body.isWeekend}, function(err, results) {
           if(err) {
             console.log(err);
             throw err;
           } else {
             connection.release();
-            console.log(rows.insertId);
-            callback(rows);
+            console.log(results.insertId);
+            callback(results.insertId);
           }
         });
       }
@@ -253,22 +253,22 @@ var query = {
       }
     });
   },
-  addLDC : function (post,callback){
-    console.log(post);
+  addLDC : function (body,callback){
+    console.log(body);
     //var post = {companyName: ldc.companyName ,country: ldc.country ,city: ldc.city ,rateType: ldc.rateType};
     connection.getConnection(function(err, connection) {
       if(err) {
         console.log(err);
         throw err;
       } else {
-        connection.query('INSERT INTO LDC SET ?',post, function(err, rows, fields) {
+        connection.query('INSERT INTO LDC SET ?',{companyName: body.companyName, country: body.country, city: body.city, rateType: body.rateType}, function(err, result) {
           if(err) {
             console.log(err);
             throw err;
           } else {
             connection.release();
-            console.log(rows.insertId);
-            callback(rows);
+            console.log(result.insertId);
+            callback(result.insertId);
           }
         });
       }
