@@ -134,15 +134,15 @@ app.put('/addRateType',function(req, res){
     });
 });
 
-app.put('/addLDC',function(req,res){
-  query.addLDC(req.query,function(message){
+app.post('/addLDC',function(req,res){
+  query.addLDC(req.body,function(message){
     res.send(message);
   });
 });
 
 //add rate information to the database
-app.put('/addRates',function(req,res){
-  query.addRates(req.query,function(message){
+app.post('/addRates',function(req,res){
+  query.addRates(req.body,function(message){
     res.send(message);
   });
 });
@@ -153,8 +153,8 @@ app.put('/addTiered',function(req,res){
   });
 });
 
-app.put('/addTimeOfUse',function(req, res){
-  query.addTimeOfUseRates(req.query,function(message) {
+app.post('/addTimeOfUse',function(req, res){
+  query.addTimeOfUseRates(req.body,function(message) {
       res.send(message);
     });
 });
