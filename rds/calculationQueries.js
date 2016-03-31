@@ -77,7 +77,7 @@ var calc = {
         console.log(err);
         throw err;
       } else {
-        connection.query('SELECT rateAmount FROM Rates WHERE units = "kW" AND LDCid = '+ldc, function(err, rows, fields) {
+        connection.query('SELECT rateAmount FROM Rates WHERE units = "kW" AND LDCid = '+ldc+' AND endDate IS null', function(err, rows, fields) {
           if(err) {
             console.log(err);
             throw err;
