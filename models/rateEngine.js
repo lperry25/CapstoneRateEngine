@@ -13,15 +13,16 @@ var consumptionCost  = new Array();
 var consumption      = new Array();
 var demand           = new Array();
 var demandCost       = new Array();
-var fixedCost        = new Array();
 var totalCost        = new Array();
 var pricingModel     = new PricingModel();
+var fixedCost        = 0;
 var ldcID            = 0;
 var isCommercial     = 0;
 var totalCostValue   = 0;
 var readyToSendBack  = 0;
 var currentMaxDemand = 0;
 var demandProp       = 0;
+var consumptionLength = 0;
 
 
 var RateEngine = function() {
@@ -40,13 +41,14 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	consumptionCost = new Array();
 	demand = new Array();
 	demandCost = new Array();
-	fixedCost = new Array();
 	totalCost = new Array();
+	fixedCost = 0;
 	ldcID = 0;
 	totalCostValue = 0;
 	readyToSendBack  = 0;
 	currentMaxDemand = 0;
 	demandProp = 0;
+	consumptionLength = 0;
 
 	//default value is that it is not commercial, so there will be no demand calculations
 	isCommercial = 0;
@@ -61,8 +63,6 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 	//set the pricingModel values
 	pricingModel = new PricingModel();
 	var pricingModelObj = body.pricingModel;
-
-	
 
 	//uncomment when testing on postman
 /*	var str = body.pricingModel;
@@ -108,6 +108,9 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 
 		}
 	}
+
+	if(body.consumptionLength != null)
+		consumptionLength = body.consumptionLength;
 
 	//console.log("the is commercial variable is " + isCommercial);
 
@@ -177,19 +180,19 @@ RateEngine.prototype.calculateCost = function(body,callback) {
 			//will need to edit this to use call backs
 			calculateConsumptionCost(function(callbackFromCalcs){
 				if (isCommercial){
-					calculateDemandCost(function(callbackFromCalcs){});
-						
-					calculateFixedCost(function(callbackFromCalcs){
-						calculateTotalCost(function(){
-				            //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
-				            totalCost = sort.mergeSort(totalCost, totalCostComparator);
-				            totalCostValue = Math.round(totalCostValue*100)/100;
-				            var returnCostValue = totalCostValue.toString();
-							var returnObject = {totalCost: totalCostValue,
-											  costArray: totalCost};
-							callback(returnObject);
+					calculateDemandCost(function(callbackFromCalcs){
+						calculateFixedCost(function(callbackFromCalcs){
+							calculateTotalCost(function(){
+					            //var returnCost = JSON.stringify(sort.mergeSort(totalCost, totalCostComparator),totalCostValue);
+					            totalCost = sort.mergeSort(totalCost, totalCostComparator);
+					            totalCostValue = Math.round(totalCostValue*100)/100;
+					            var returnCostValue = totalCostValue.toString();
+								var returnObject = {totalCost: totalCostValue,
+												  costArray: totalCost};
+								callback(returnObject);
+							});
 						});
-					});
+					});	
 				}
 				else
 				{
@@ -223,8 +226,9 @@ function calculateConsumptionCost(callback){
 	//check if the LDC is in Ontario, and therefore will use HOEP prices
 	var hoep = ldcID;
 	var city = pricingModel.getCity();
-	if (city == "London" || city == "Toronto")
+	if (city == "London" || city == "Toronto" || city == "Hamilton" || city == "Oshawa" || city == "Windsor")
 		hoep = 7;
+
 	//will need to add additional if statments if new HOEP like prices are added for other cities/regions
 	//if the hoep value is just for the city and not a region, the ldcID will just be used
 
@@ -309,27 +313,43 @@ function calculateDemandCost(callback){
 		dbCalculations.regDemand(ldcID,function(rates){
 
 			//calculate the total cost
+			console.log("this is the demand rate returned " + rates);
+			var isDone = false;
 			var totalDemandCost = rates * currentMaxDemand;
 
-			//find the average demand cost per consumption point
-			demandProp = totalDemandCost / consumption.length;
+			//find the average demand cost per consumption pointCost
+			if (consumption.length > 1)
+				demandProp = totalDemandCost / consumption.length;	
+			else
+				demandProp = totalDemandCost / consumptionLength;
 
-	    	callback();
+	    	if (totalDemandCost != null)
+	    		callback();
     	});
 //	});
 	
 }
 function calculateFixedCost(callback){
 	//based off of all of the time values, we need to find out how many / what percentage of bills are part of the costs
+	var billProportion = 0;
 
-	var firstDate = new Date(consumption[0].time);
-	var lastDate = new Date(consumption[consumption.length-1].time);
-	var timeDiff = Math.abs(lastDate.getTime() - firstDate.getTime());
-	var hourDiff = timeDiff/(1000*3600);
+	if(consumption.length > 1)
+	{
+		var firstDate = new Date(consumption[0].time);
+		var lastDate = new Date(consumption[consumption.length-1].time);
+		var timeDiff = Math.abs(lastDate.getTime() - firstDate.getTime());
+		var hourDiff = timeDiff/(1000*3600);
 
-	//find out how many bills the time represents
-	//we assume a bill to be 30.42 days which equals 730.08 hours
-	var billProportion = hourDiff/730.08;
+		//find out how many bills the time represents
+		//we assume a bill to be 30.42 days which equals 730.08 hours
+		billProportion = hourDiff/730.08;
+	}
+	else
+	{
+		//assuming that each point is one hour, we can see how many hours of consumption there is
+		billProportion = consumption.length / 730.08;
+	}
+	
 
 	//call to the database to get all of the fixed rates for this LDC
 	dbCalculations.fixedCosts(ldcID,function(rates){
@@ -338,26 +358,35 @@ function calculateFixedCost(callback){
 
 			//each consumption point needs the correct porportion of fixed costs
 			var pointCost = totalFixedCost / consumption.length;
+			if (consumption.length > 1)
+				fixedCost = totalFixedCost / consumption.length;
+			else
+				fixedCost = totalFixedCost / consumptionLength;
+
+			callback();
 
 			//make new cost variables for each point in the totalCost array
-			consumption.forEach(function(item){
+		/*	consumption.forEach(function(item){
 				var newCost = new Cost();
 				newCost.setPoint(item.time,pointCost);
+				if(newCost == undefined || newCost == null || newCost == "")
+					console.log("the newCost is undefined");
 				fixedCost.push(newCost);
 
 				if (fixedCost.length == consumption.length)
 					callback();
 			});
+*/
     	});
 }
 
 function maxDemand(returnDemand){
 	var count = 0;
 	demand.forEach(function(item){
-		if (item.amount > currentMax)
+		if (item.amount > currentMaxDemand)
 		{
-			currentMax = item.amount;
-			console.log("the currentMax" + currentMax);
+			currentMaxDemand = item.amount;
+			console.log("the currentMaxDemand is " + currentMaxDemand);
 		}
 		count = count +1;
 		if (count > demand.length)
@@ -367,12 +396,20 @@ function maxDemand(returnDemand){
 }
 
 function calculateTotalCost(callback){
+	console.log("the max demand is " + currentMaxDemand);
 	console.log("demand porportion is " + demandProp);
+	//console.log("the fixed cost length is " + fixedCost.length);
+	//console.log("the consumption length is " + fixedCost.length);
 	for (var i = 0; i<consumptionCost.length;i++){
 		
 		var sum = 0;
-
-		sum = consumptionCost[i].amount +fixedCost[i].amount + demandProp;
+		//if(consumption.length == 1)
+		//{
+			//console.log("the consumption cost is "+consumptionCost[i].amount);
+			//console.log("the fixed cost is fixedCost "+fixedCost[i]);	
+		//}
+		
+		sum = consumptionCost[i].amount +fixedCost + demandProp;
 		totalCostValue = totalCostValue + sum;
 		//round the sum to only two digits
 		sum = Math.round(sum*100)/100;
